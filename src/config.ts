@@ -1,5 +1,7 @@
 import { newDatabase } from "./db/db";
 import type { Database } from "bun:sqlite";
+// import { s3, write, S3Client } from "bun";
+import { S3Client, type S3Client as S3ClientType } from "bun";
 
 export type ApiConfig = {
   db: Database;
@@ -7,6 +9,7 @@ export type ApiConfig = {
   platform: string;
   filepathRoot: string;
   assetsRoot: string;
+  s3Client: S3Client;
   s3Bucket: string;
   s3Region: string;
   s3CfDistribution: string;
@@ -25,17 +28,27 @@ const port = envOrThrow("PORT");
 
 const db = newDatabase(pathToDB);
 
+const client = new S3Client({
+  bucket: s3Bucket,
+  region: s3Region,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+});
+
 export const cfg: ApiConfig = {
   db: db,
   jwtSecret: jwtSecret,
   platform: platform,
   filepathRoot: filepathRoot,
   assetsRoot: assetsRoot,
+  s3Client: client,
   s3Bucket: s3Bucket,
   s3Region: s3Region,
   s3CfDistribution: s3CfDistribution,
   port: port,
 };
+
+
 
 function envOrThrow(key: string) {
   const envVar = process.env[key];
