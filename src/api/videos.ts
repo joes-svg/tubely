@@ -7,7 +7,7 @@ import { BadRequestError, UserForbiddenError, NotFoundError } from "./errors";
 import { getVideo, updateVideo } from "../db/videos";
 import { rm } from "fs/promises";
 import { uploadVideoToS3 } from "../s3";
-import { getVideoDimensions } from "../utility/video";
+import { getVideoDimensions, processVideoForFastStart } from "../utility/video";
 
 export async function handlerUploadVideo(cfg: ApiConfig, req: BunRequest) {
   const token = getBearerToken(req.headers);
@@ -48,18 +48,20 @@ export async function handlerUploadVideo(cfg: ApiConfig, req: BunRequest) {
   
   console.log("Writing temp file...");
   await Bun.write(tempFilePath, file);
+  const fastStartFilePath = await processVideoForFastStart(tempFilePath);
 
-  const aspectRatio = await getVideoDimensions(tempFilePath);
+  const aspectRatio = await getVideoDimensions(fastStartFilePath);
   console.log("Aspect Ratio: ", aspectRatio);
   
   console.log("Uploading to S3...");
-  await uploadVideoToS3(cfg, filename, tempFilePath, mediaType);
+  await uploadVideoToS3(cfg, aspectRatio+ "/" +filename, fastStartFilePath, mediaType);
   console.log("S3 Upload Complete")
   
   await rm(tempFilePath, { force: true });
+  await rm(fastStartFilePath, { force: true });
 
-  updateVideo(cfg.db, { ...video, videoURL: `https://${cfg.s3Bucket}.s3.${cfg.s3Region}.amazonaws.com/${filename}` });
-  // updateVideo(cfg.db, { ...video, videoURL: `https://${cfg.s3Bucket}.s3.${cfg.s3Region}.amazonaws.com/${aspectRatio}/${filename}` });
+  // updateVideo(cfg.db, { ...video, videoURL: `https://${cfg.s3Bucket}.s3.${cfg.s3Region}.amazonaws.com/${filename}` });
+  updateVideo(cfg.db, { ...video, videoURL: `https://${cfg.s3Bucket}.s3.${cfg.s3Region}.amazonaws.com/${aspectRatio}/${filename}` });
 
   return respondWithJSON(200, getVideo(cfg.db, videoId));
 }

@@ -22,3 +22,14 @@ export async function getVideoDimensions(filePath: string): Promise<string | nul
         }
     }
 }
+
+export async function processVideoForFastStart(inputFilePath: string) : Promise<string> {
+    const fastStartFilePath = inputFilePath.replace(/(\.\w+)$/, "_faststart$1");
+
+    const result = await Bun.spawn(["ffmpeg", "-i", inputFilePath, "-c:v", "copy", "-c:a", "copy", "-map_metadata", "0", "-movflags", "+faststart", fastStartFilePath],
+        { stdout: "pipe", stderr: "pipe" }
+    );
+    await result.exited;
+    return fastStartFilePath;
+
+}
