@@ -4,10 +4,11 @@ import { type ApiConfig } from "../config";
 import { S3Client, type BunRequest } from "bun";
 import { getBearerToken, validateJWT } from "../auth";
 import { BadRequestError, UserForbiddenError, NotFoundError } from "./errors";
-import { getVideo, updateVideo } from "../db/videos";
+import { dbVideoToSignedVideo, getVideo, updateVideo } from "../db/videos";
 import { rm } from "fs/promises";
 import { uploadVideoToS3 } from "../s3";
 import { getVideoDimensions, processVideoForFastStart } from "../utility/video";
+
 
 export async function handlerUploadVideo(cfg: ApiConfig, req: BunRequest) {
   const token = getBearerToken(req.headers);
@@ -61,7 +62,7 @@ export async function handlerUploadVideo(cfg: ApiConfig, req: BunRequest) {
   await rm(fastStartFilePath, { force: true });
 
   // updateVideo(cfg.db, { ...video, videoURL: `https://${cfg.s3Bucket}.s3.${cfg.s3Region}.amazonaws.com/${filename}` });
-  updateVideo(cfg.db, { ...video, videoURL: `https://${cfg.s3Bucket}.s3.${cfg.s3Region}.amazonaws.com/${aspectRatio}/${filename}` });
+  updateVideo(cfg.db, { ...video, videoURL: `${aspectRatio}/${filename}` });
 
-  return respondWithJSON(200, getVideo(cfg.db, videoId));
+  return respondWithJSON(200, dbVideoToSignedVideo(video));
 }

@@ -1,5 +1,7 @@
 import { randomUUID } from "crypto";
 import type { Database } from "bun:sqlite";
+import { cfg } from "../config";
+import { generatePresignedURL} from "../utility/video";
 
 export type Video = {
   id: string;
@@ -148,3 +150,11 @@ export function deleteVideo(db: Database, id: string): void {
   `;
   db.run(sql, [id]);
 }
+export async function dbVideoToSignedVideo(video: Video): Promise<Video> {
+  const signedURL = await generatePresignedURL(cfg, video.videoURL!, 3600);
+  return {
+    ...video,
+    videoURL: signedURL,
+  }
+}
+  

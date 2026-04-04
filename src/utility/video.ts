@@ -1,3 +1,5 @@
+import type { ApiConfig } from "../config";
+
 export async function getVideoDimensions(filePath: string): Promise<string | null> {
     const resolution = await Bun.spawn(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=display_aspect_ratio", "-of", "default=nw=1:nk=1", filePath],
         { stdout: "pipe", stderr: "pipe" }
@@ -32,4 +34,11 @@ export async function processVideoForFastStart(inputFilePath: string) : Promise<
     await result.exited;
     return fastStartFilePath;
 
+}
+
+export async function generatePresignedURL(cfg: ApiConfig, key: string, expireTime: number): Promise<string> {
+    const signedURL = await cfg.s3Client.presign(key, {
+        expiresIn: expireTime
+    });
+    return signedURL;
 }
