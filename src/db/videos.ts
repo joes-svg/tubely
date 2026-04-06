@@ -151,6 +151,9 @@ export function deleteVideo(db: Database, id: string): void {
   db.run(sql, [id]);
 }
 export async function dbVideoToSignedVideo(video: Video): Promise<Video> {
+  if (!video.videoURL) {
+    return video;
+  }
   const signedURL = await generatePresignedURL(cfg, video.videoURL!, 3600);
   return {
     ...video,
