@@ -65,6 +65,9 @@ export async function handlerVideosRetrieve(cfg: ApiConfig, req: Request) {
 
   const videos = getVideos(cfg.db, userID);
   for (const video of videos) {
+    if (!video.videoURL) {
+      continue;
+    }
     video.videoURL = await generatePresignedURL(cfg, video.videoURL!, 3600);
   }
   return respondWithJSON(200, videos);
